@@ -4,7 +4,7 @@
 
 ## 📋 개요
 
-이 모듈은 Hugging Face의 [`kresnik/wav2vec2-large-xlsr-korean`](https://huggingface.co/kresnik/wav2vec2-large-xlsr-korean) 모델을 기반으로 15가지 감정을 분류하는 음성 감정 분석 시스템입니다.
+이 모듈은 Hugging Face의 [`kresnik/wav2vec2-large-xlsr-korean`](https://huggingface.co/kresnik/wav2vec2-large-xlsr-korean) 모델을 기반으로 4가지 감정을 분류하는 음성 감정 분석 시스템입니다.
 
 ### 🎯 기반 모델 정보
 - **모델**: [kresnik/wav2vec2-large-xlsr-korean](https://huggingface.co/kresnik/wav2vec2-large-xlsr-korean)
@@ -14,38 +14,32 @@
 - **라이선스**: Apache 2.0
 
 ### 지원하는 감정 클래스
-- Neutral (중립)
-- Angry (분노)
-- Joy (기쁨)
-- Sad (슬픔)
-- Serious (진지함)
 - Anxious (불안)
 - Kind (친절)
 - Dry (건조함)
-- Tease (놀림)
-- Doubt (의심)
-- Surprise (놀람)
-- Shy (수줍음)
-- Hurry (서두름)
-- Fear (두려움)
-- Hesitate (주저함)
+- Others (기타)
 
 ## 🏗️ 프로젝트 구조
 
 ```
 SER/
-├── __init__.py              # 패키지 초기화
-├── config.py                # 설정 관리
-├── model.py                 # Wav2Vec2 모델 구현
-├── preprocessing.py         # 오디오 전처리
-├── data_loader.py          # 데이터 로더
-├── trainer.py              # 훈련 관리
-├── train.py                # 훈련 스크립트
-├── inference.py            # 추론 엔진
-├── evaluate.py             # 모델 평가
-├── utils.py                # 유틸리티 함수
-├── requirements.txt        # 의존성
-└── README.md              # 문서
+├── Sagemaker/
+    ├── code /                    # Sagemaker 추론을 위한 model.tar.gz 파일 구성
+    ├── deploy.py                 # Sagemaker 배포
+    ├── Dockerfile                # Sagemaker 배포용 도커 이미지
+├── config.py                     # 설정 관리
+├── model.py                      # Wav2Vec2 모델 구현
+├── preprocessing.py              # 오디오 전처리
+├── datasets.py                   # 데이터 로더
+├── trainer.py                    # 1 GPU 훈련
+├── trainer_accelerate.py         # Multi GPU 훈련
+├── trainer_accelerate_text.py    # Text 버전 Multi GPU 훈련
+├── test_dataset.py               # 모델 평가
+├── utils.py                      # 유틸리티 함수
+├── data_utils.py                 # 데이터 유틸리티 함수
+├── model_utils.py                # 모델 유틸리티 함수
+├── requirements.txt              # 의존성
+└── README.md                     # 문서
 ```
 
 ## ⚡ 빠른 시작
@@ -61,52 +55,11 @@ pip install -r requirements.txt
 
 #### 모델 훈련
 
-```python
-from SER.trainer import create_trainer
-from SER.data_loader import load_dataset_from_directory
-
-# 데이터 로드
-audio_paths, labels = load_dataset_from_directory("./data/emotions/")
-
-# 훈련기 생성 및 훈련
-trainer = create_trainer()
-trainer.train(train_data=(audio_paths, labels))
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2 accelerate launch --num_processes=3 trainer_accelerate_text.py conda activate ser2
 ```
 
 #### 추론
-
-```python
-from SER.inference import create_inference_engine
-
-# 추론 엔진 생성
-inference = create_inference_engine("./results")
-
-# 단일 파일 예측
-result = inference.predict_single("audio_file.wav")
-print(f"예측 감정: {result['predicted_emotion']}")
-print(f"신뢰도: {result['confidence']:.4f}")
-```
-
-### 3. 명령행 인터페이스
-
-#### 훈련 실행
-
-```bash
-python -m SER.train \
-    --data_dir ./data/emotions \
-    --output_dir ./results \
-    --batch_size 8 \
-    --num_epochs 10 \
-    --learning_rate 1e-4
-```
-
-#### 추론 실행
-
-```bash
-python -m SER.inference \
-    --model_path ./results \
-    --audio_path audio_file.wav
-```
 
 #### 모델 평가
 
@@ -117,19 +70,18 @@ python -m SER.evaluate \
     --output_dir ./evaluation_results
 ```
 
+
 ## 📊 데이터 준비
 
 ### 디렉토리 구조 방식
 
 ```
 data/
-├── emotions/
-│   ├── Neutral/
+├── F0001/
+│   ├── wav_48000/
 │   │   ├── file1.wav
 │   │   └── file2.wav
-│   ├── Angry/
-│   │   ├── file3.wav
-│   │   └── file4.wav
+│   ├── script.txt
 │   └── ...
 ```
 
